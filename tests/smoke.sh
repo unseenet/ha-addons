@@ -70,7 +70,13 @@ node() {
         "key": "ed25519:bjhcf6tbf2yt37vn7iomsdg5o4xlvdvudjndnm4prrveiur3cukq", "groups": "alt.*"}],
         "carries": ["*"], "auto_peers": 3, "announce": true, "retention_days": 30, "min_pow": 18,
         "new_groups": "accept", "files": true, "encrypted_files": false, "profile_pictures": true,
-        "sites": false, "listen_internal": false, "manage_config": true}'
+        "sites": false, "listen_internal": false, "manage_config": true, "follow_reports": [
+        {"issuer": "ed25519:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "posts": "hide",
+         "keys": "surcharge"}], "excludes": "alt.binaries.*", "min_ripe": "-", "ripen_to": 2,
+        "trusted_owners": ["ed25519:bjhcf6tbf2yt37vn7iomsdg5o4xlvdvudjndnm4prrveiur3cukq"],
+        "refusal_keys": ["ed25519:bjhcf6tbf2yt37vn7iomsdg5o4xlvdvudjndnm4prrveiur3cukq"],
+        "files_max_size": 2, "files_daily_per_key": 16, "max_clients": 500,
+        "operator_description": "A \"test\" node", "operator_contact": "operator@ph5fc5hop5232qsz"}'
     docker run -d --name ha-smoke-node --tmpfs /tmp -e UNSEENET_NO_TOR=1 -v "$D:/data" "$img" >/dev/null
     wait_log ha-smoke-node "node key: ed25519:" || no "the node key is not in the log"
     KEY=$(docker logs ha-smoke-node 2>&1 | sed -n 's/.*node key: \(ed25519:[a-z2-7]*\).*/\1/p' | head -1)
@@ -87,8 +93,16 @@ node() {
     docker exec ha-smoke-node grep -q 'name = "p1"' /data/node/node.toml || no "peer not in node.toml"
     docker exec ha-smoke-node grep -q 'retention_days = 30' /data/node/node.toml || no "retention"
     docker exec ha-smoke-node grep -q 'avatars = "accept"' /data/node/node.toml || no "avatars"
-    docker exec ha-smoke-node python3 -c "import tomllib; tomllib.load(open('/data/node/node.toml', 'rb'))"
-    ok "node.toml written from the options, and valid TOML"
+    docker exec ha-smoke-node grep -q 'max_size = 2097152' /data/node/node.toml || no "files_max_size"
+    # the node's own loader takes every section the add-on wrote
+    docker exec ha-smoke-node python3 -c "from pathlib import Path; \
+        from unseenet.cli.node import load_node_config as load; \
+        c = load(Path('/data/node/node.toml')); \
+        assert c.min_ripe is None and c.ripen_to == 2 and c.excludes == 'alt.binaries.*', c; \
+        assert len(c.follow_reports) == 1 and c.refusal_keys and c.max_clients == 500, c; \
+        assert c.blobs['daily_per_key'] == 16 * 1024 * 1024 and c.operator['description'], c; \
+        assert c.peers[0].groups == 'alt.*' and c.trusted_owners, c" || no "the node rejects node.toml"
+    ok "node.toml written from the options, and the node's own loader takes it"
     as_user ha-smoke-node 'cat /data/options.json' 2>/dev/null && no "the node's user reads options.json"
     as_user ha-smoke-node 'ls /data' >/dev/null 2>&1 && no "the node's user lists /data"
     docker exec ha-smoke-node sh -c 'stat -c "%a %U" /tmp/addon/passphrase' | grep -qx "600 unseenet" \

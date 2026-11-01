@@ -82,4 +82,4 @@ file in memory.
 ## Help
 
 Ask in the group `unseenet.help` on the network, or open an issue at
-<https://github.com/unseenet/ha-addons/issues>.
+<https://github.com/unseenet/unseenet-haos-addons/issues>.

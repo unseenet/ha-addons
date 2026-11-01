@@ -51,61 +51,121 @@ def toml_list(values: list[str]) -> str:
     return "[" + ", ".join(toml_str(v) for v in values) + "]"
 
 
+MIB = 1024 * 1024
+
+
+def tbool(value) -> str:
+    return "true" if value else "false"
+
+
+def accept(value) -> str:
+    return toml_str("accept" if value else "refuse")
+
+
+def keys(o: dict, name: str) -> list[str]:
+    """A list of keys (ed25519:...) from the options, each checked."""
+    out = [str(k).strip() for k in (o.get(name) or []) if str(k).strip()]
+    for k in out:
+        if not KEY_RE.match(k):
+            fail(f"{name}: {k!r} is not a key (ed25519:...)")
+    return out
+
+
 def check_peers(peers: list[dict]) -> list[dict]:
     out, seen = [], set()
     for i, p in enumerate(peers, 1):
-        name = str(p.get("name", "")).strip()
-        address = str(p.get("address", "")).strip()
-        key = str(p.get("key") or "").strip()
-        groups = str(p.get("groups") or "").strip()
+        peer = {k: str(p.get(k) or "").strip()
+                for k in ("name", "address", "key", "groups", "pull", "accept")}
+        name = peer["name"]
         if not NAME_RE.match(name):
             fail(f"peer #{i}: a name of letters, digits, '.', '_' or '-', not {name!r}")
         if name in seen:
             fail(f"peer #{i}: the name {name!r} is used twice")
         seen.add(name)
-        if not address:
+        if not peer["address"]:
             fail(f"peer {name}: no address (the peer's onion address, e.g. abc...xyz.onion)")
-        if key and not KEY_RE.match(key):
+        if peer["key"] and not KEY_RE.match(peer["key"]):
             fail(f"peer {name}: the key must look like ed25519:... (the peer's node key), "
-                 f"not {key!r}")
-        out.append({"name": name, "address": address, "key": key, "groups": groups})
+                 f"not {peer['key']!r}")
+        out.append(peer)
     return out
 
 
 def node_toml(o: dict) -> str:
+    """node.toml from the add-on's options: every setting of the node's configuration
+    (https://unseenet.org/node/configuration/). Options left out keep the node's own
+    defaults, except the ones the add-on's Configuration tab always shows."""
     peers = check_peers(o.get("peers") or [])
     carries = [str(c).strip() for c in (o.get("carries") or ["*"]) if str(c).strip()] or ["*"]
-    pictures = "accept" if o.get("profile_pictures") else "refuse"
+    pictures = bool(o.get("profile_pictures"))
+    node = [
+        f"name = {toml_str(str(o.get('node_name') or 'ha-unseenet'))}",
+        f"carries = {toml_list(carries)}",
+        f"announce = {tbool(o.get('announce', True))}",
+        f"auto_peers = {int(o.get('auto_peers', 3))}",
+        f"retention_days = {int(o.get('retention_days', 90))}",
+        f"profiles = {accept(o.get('profiles', True))}",
+        f"avatars = {accept(pictures)}",
+        f"emoji = {accept(o.get('emoji', pictures))}",
+        f"sites = {accept(o.get('sites'))}",
+    ]
+    for name, fmt in (("min_pow", int), ("max_size", int), ("ripen_to", int),
+                      ("pull_interval", int), ("new_groups", toml_str),
+                      ("excludes", toml_str), ("min_ripe", toml_str),
+                      ("honour_blocks", tbool), ("fetch", tbool)):
+        if o.get(name) is not None and o.get(name) != "":
+            value = o[name]
+            if name == "min_ripe" and value != "-":
+                value = int(value)              # a level 0-4, or "-" for none
+                node.append(f"min_ripe = {value}")
+                continue
+            node.append(f"{name} = {fmt(value) if fmt is not int else int(value)}")
+    owners = keys(o, "trusted_owners")
+    if owners:
+        node.append(f"trusted_owners = {toml_list(owners)}")
+
+    blobs = [
+        f"enabled = {tbool(o.get('files'))}",
+        f"max_size = {int(o.get('files_max_size', 1)) * MIB}",
+        f"retention_days = {int(o.get('files_retention_days', 30))}",
+        f"encrypted = {tbool(o.get('encrypted_files'))}",
+        f"groups = {toml_str(str(o.get('files_groups') or '*'))}",
+    ]
+    for name, key in (("files_daily_per_key", "daily_per_key"),
+                      ("files_daily_per_group", "daily_per_group")):
+        if o.get(name) is not None:
+            blobs.append(f"{key} = {int(o[name]) * MIB}")
+
     lines = [
         "# Written by the Unseenet Home Assistant add-on from its options at every start.",
         "# Change the options in Home Assistant, not this file - or turn manage_config off",
         "# to edit it by hand. See https://unseenet.org/node/configuration/",
-        "[node]",
-        f"name = {toml_str(str(o.get('node_name') or 'ha-unseenet'))}",
-        f"min_pow = {int(o.get('min_pow', 18))}",
-        f"retention_days = {int(o.get('retention_days', 90))}",
-        f"new_groups = {toml_str(str(o.get('new_groups', 'accept')))}",
-        f"carries = {toml_list(carries)}",
-        f"announce = {'true' if o.get('announce', True) else 'false'}",
-        f"auto_peers = {int(o.get('auto_peers', 3))}",
-        f"avatars = {toml_str(pictures)}",
-        f"emoji = {toml_str(pictures)}",
-        f"sites = {toml_str('accept' if o.get('sites') else 'refuse')}",
-        "",
-        "# Pictures and small files (UN-RFC 0027), kept 30 days at most",
-        "[blobs]",
-        f"enabled = {'true' if o.get('files') else 'false'}",
-        "max_size = 1048576",
-        "retention_days = 30",
-        f"encrypted = {'true' if o.get('encrypted_files') else 'false'}",
+        "[node]", *node,
+        "", "# Pictures and small files (UN-RFC 0027)", "[blobs]", *blobs,
     ]
+    refusers = keys(o, "refusal_keys")
+    if refusers:
+        lines += ["", "[refusals]", f"keys = {toml_list(refusers)}",
+                  f"groups = {toml_str(str(o.get('refusal_groups') or '*'))}"]
+    if o.get("max_clients"):
+        lines += ["", "[limits]", f"max_clients = {int(o['max_clients'])}"]
+    operator = [(k, str(o.get(f"operator_{k}") or "").strip())
+                for k in ("key", "contact", "description", "logging")]
+    if any(v for _, v in operator):
+        lines += ["", "[operator]"] + [f"{k} = {toml_str(v)}" for k, v in operator if v]
+    issuers = set()
+    for f in o.get("follow_reports") or []:
+        issuer = str(f.get("issuer") or "").strip()
+        if not KEY_RE.match(issuer):
+            fail(f"follow_reports: the issuer must be a key (ed25519:...), not {issuer!r}")
+        if issuer in issuers:
+            fail(f"follow_reports: {issuer} is followed twice")
+        issuers.add(issuer)
+        lines += ["", "[[follow_reports]]", f"issuer = {toml_str(issuer)}",
+                  f"posts = {toml_str(str(f.get('posts') or 'hide'))}",
+                  f"keys = {toml_str(str(f.get('keys') or 'ignore'))}"]
     for p in peers:
-        lines += ["", "[[peer]]", f"name = {toml_str(p['name'])}",
-                  f"address = {toml_str(p['address'])}"]
-        if p["key"]:
-            lines.append(f"key = {toml_str(p['key'])}")
-        if p["groups"]:
-            lines.append(f"groups = {toml_str(p['groups'])}")
+        lines += ["", "[[peer]]"] + [f"{k} = {toml_str(v)}" for k, v in p.items() if v]
     return "\n".join(lines) + "\n"
 
 
@@ -176,6 +236,10 @@ def main() -> None:
         fail("could not unlock the node's keys - is the passphrase the one the node was "
              "first started with?")
 
+    # the entrypoint (0.7.0 and newer) left its copy for the node's user in /tmp; on a host
+    # with fs.protected_regular even root may not open it again in sticky /tmp, so the
+    # next start would fail to make its own - remove it
+    Path("/tmp/unseenet_node_passphrase").unlink(missing_ok=True)
     say("starting the node; its onion address follows once Tor is running")
     os.execv(ENTRYPOINT, [ENTRYPOINT])
 

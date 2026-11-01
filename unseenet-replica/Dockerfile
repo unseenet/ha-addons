@@ -23,7 +23,7 @@ LABEL io.hass.type="addon" \
       io.hass.arch="${BUILD_ARCH}" \
       io.hass.version="${BUILD_VERSION}" \
       org.opencontainers.image.title="Unseenet council replica (Home Assistant add-on)" \
-      org.opencontainers.image.source="https://github.com/unseenet/ha-addons" \
+      org.opencontainers.image.source="https://github.com/unseenet/unseenet-haos-addons" \
       org.opencontainers.image.licenses="Apache-2.0"
 
 ENTRYPOINT ["/sbin/tini", "--", "unseenet-addon"]

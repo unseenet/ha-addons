@@ -7,49 +7,119 @@ configuration:
     description: >-
       Seals the node's keys. At least 12 characters. Keep a copy somewhere
       safe - it cannot be recovered, and a new one means a new node.
-  peers:
-    name: Peers
-    description: >-
-      Other nodes to exchange groups with: a name, the peer's onion address,
-      and its node key (ed25519:...). Optionally groups, a wildmat such as
-      "alt.*,dk.*". With automatic peering on, you may leave this empty.
-  carries:
-    name: Hierarchies carried
-    description: >-
-      Patterns over group names, e.g. "*" for everything or "alt.*" and
-      "dk.*". The network's own groups are always carried.
   auto_peers:
     name: Automatic peers
     description: >-
-      Also exchange with this many nodes announced in the network
-      (0 = only the peers above).
+      The node finds peers by itself: it pulls from this many nodes announced
+      in the network, changed daily (0-16; 0 = only the peers below).
+  peers:
+    name: Particular peers
+    description: >-
+      Nodes you have agreed to exchange with: a name, the peer's onion
+      address and its node key (ed25519:...). Optional wildmats: groups (to
+      send), pull (to catch up on), accept (to take). Not needed to get going.
+  carries:
+    name: Hierarchies carried
+    description: >-
+      Patterns over group names, e.g. "*" for everything, or "alt.*" and
+      "dk.*". The network's own groups are always carried.
   announce:
     name: Announce this node
     description: Tell the network about this node, so others can find it.
   retention_days:
     name: Keep posts (days)
     description: How long the node keeps posts.
-  min_pow:
-    name: Minimum postage
-    description: The least proof-of-work a post must carry (18 is the network default).
-  new_groups:
-    name: New groups
-    description: >-
-      accept - carry new groups; trusted - only from owners you trust;
-      manual - only groups you add.
   files:
     name: Carry pictures and files
     description: >-
-      Pictures and small files in posts (at most 1 MiB, kept 30 days).
-      Recommended - without them users see missing pictures.
-  encrypted_files:
-    name: Carry encrypted files
-    description: Files of closed groups and private posts, which nobody but their readers can see.
+      Pictures and small files in posts. Recommended - without them users see
+      missing pictures.
   profile_pictures:
-    name: Carry profile pictures and emoji
+    name: Carry profile pictures
   sites:
     name: Carry sites
-    description: Small sites of pages; they stay until their owner removes them.
+    description: Small sites of pages; they stay until their owner changes them.
+  follow_reports:
+    name: Follow spam reports
+    description: >-
+      Issuers whose spam reports the node follows (issuer key), and what it
+      does: posts hide or delete; keys refuse, surcharge or ignore. Nobody
+      unless you add one.
+  excludes:
+    name: Groups left out
+    description: A wildmat, e.g. "alt.binaries.*". Users see what the node leaves out.
+  new_groups:
+    name: New groups
+    description: >-
+      accept - carry new groups; trusted - only from the owners below;
+      manual - none.
+  trusted_owners:
+    name: Trusted owners
+    description: Owner keys whose new groups are carried when new groups is "trusted".
+  profiles:
+    name: Carry profiles
+    description: Identities' public profiles (text). On unless you turn it off.
+  emoji:
+    name: Carry group emoji
+    description: Groups' own emoji (small pictures). Follows profile pictures unless set.
+  honour_blocks:
+    name: Honour maintainers' blocks
+    description: Refuse posts by identities a hierarchy's maintainer has blocked.
+  fetch:
+    name: Fetch for users
+    description: Fetch posts of groups this node does not carry when a user asks for them.
+  min_pow:
+    name: Minimum postage
+    description: The least proof-of-work a post must carry (18 is the network default).
+  min_ripe:
+    name: Minimum key ripeness
+    description: The lowest key-ripening level accepted, 0-4, or "-" for none.
+  max_size:
+    name: Largest post (bytes)
+    description: 32768 to 65536.
+  encrypted_files:
+    name: Carry encrypted files
+    description: Files of closed groups and private posts, which only their readers can open.
+  files_max_size:
+    name: Largest file (MiB)
+    description: 1 to 4.
+  files_retention_days:
+    name: Keep files (days)
+    description: Files go after this; the post stays.
+  files_groups:
+    name: Groups whose files are carried
+    description: A wildmat; "*" is all.
+  files_daily_per_key:
+    name: Files a day per author (MiB)
+  files_daily_per_group:
+    name: Files a day per group (MiB)
+  refusal_keys:
+    name: Follow refusal lists by
+    description: Keys whose lists of refused pictures and files the node follows.
+  refusal_groups:
+    name: Refusal lists from groups
+    description: The groups refusal lists may come from, a wildmat.
+  ripen_to:
+    name: Ripen the node key to
+    description: How far the node ripens its own key before announcing itself.
+  pull_interval:
+    name: Catch-up interval (seconds)
+    description: Seconds between catch-up pulls from each peer.
+  max_clients:
+    name: Most client connections
+    description: Leave empty for what the machine can carry.
+  operator_key:
+    name: Operator key
+    description: Your identity key as the node's operator (ed25519:...).
+  operator_contact:
+    name: Operator contact
+    description: The Group ID of your contact inbox.
+  operator_description:
+    name: About this node
+    description: A few words about the node, shown to users.
+  operator_logging:
+    name: What the node logs
+    description: Shown to users.
   listen_internal:
     name: Open to other add-ons
     description: >-
@@ -58,5 +128,6 @@ configuration:
   manage_config:
     name: Manage node.toml
     description: >-
-      Write node.toml from these options at every start. Turn off to edit
-      /data/node/node.toml by hand (the options above are then ignored).
+      On (default): node.toml is written from these options at every start.
+      Off: /data/node/node.toml is left alone after the first start, for
+      editing by hand.

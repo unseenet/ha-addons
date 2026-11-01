@@ -5,14 +5,14 @@
   </picture>
 </p>
 
-<h1 align="center">ha-addons</h1>
+<h1 align="center">unseenet-haos-addons</h1>
 
 <p align="center"><b>Run an Unseenet node on your Home Assistant machine, with a few clicks.</b><br>
 It is on all the time anyway - which is exactly what a node needs.</p>
 
 <p align="center">
-  <a href="https://github.com/unseenet/ha-addons/releases"><img src="https://img.shields.io/github/v/release/unseenet/ha-addons?include_prereleases&label=release" alt="Release"></a>
-  <a href="https://github.com/unseenet/ha-addons/actions/workflows/ci.yml"><img src="https://github.com/unseenet/ha-addons/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
+  <a href="https://github.com/unseenet/unseenet-haos-addons/releases"><img src="https://img.shields.io/github/v/release/unseenet/unseenet-haos-addons?include_prereleases&label=release" alt="Release"></a>
+  <a href="https://github.com/unseenet/unseenet-haos-addons/actions/workflows/ci.yml"><img src="https://github.com/unseenet/unseenet-haos-addons/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache-2.0"></a>
 </p>
 
@@ -42,7 +42,7 @@ public web service.
 ## Install
 
 1. In Home Assistant: **Settings → Add-ons → Add-on Store → ⋮ → Repositories**,
-   and add `https://github.com/unseenet/ha-addons`.
+   and add `https://github.com/unseenet/unseenet-haos-addons`.
 2. Open **Unseenet node**, install it, set a **passphrase** in its
    Configuration tab, and start it.
 3. Its log shows the node's key and, once Tor is running, its onion address -

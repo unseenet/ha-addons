@@ -29,7 +29,22 @@ jobs:
           pip install --quiet yamllint
           yamllint --strict .
           shellcheck tests/smoke.sh
-          for f in */rootfs/usr/local/bin/unseenet-addon; do python3 -m py_compile "$f"; done
+          for f in */rootfs/usr/local/bin/unseenet-addon tests/*.py; do python3 -m py_compile "$f"; done
+
+  options:
+    # the options and schema, checked with the Supervisor's own validator
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: The Supervisor
+        run: |
+          git clone --quiet --depth 1 https://github.com/home-assistant/supervisor.git "$RUNNER_TEMP/supervisor"
+          pip install --quiet -r "$RUNNER_TEMP/supervisor/requirements.txt"
+      - name: Check every add-on's options
+        run: python tests/check_options.py "$RUNNER_TEMP/supervisor"
 
   smoke:
     runs-on: ubuntu-latest

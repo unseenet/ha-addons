@@ -77,6 +77,10 @@ def main() -> None:
     os.environ["UNSEENET_REPLICA_PASSPHRASE_FILE"] = str(SECRET)
     os.environ.pop("UNSEENET_REPLICA_PASSPHRASE", None)
 
+    # a copy left from an earlier start: on a host with fs.protected_regular even root may
+    # not open it again in sticky /tmp, so the entrypoint could not make its own
+    Path("/tmp/unseenet_replica_passphrase").unlink(missing_ok=True)
+
     config = DATA / "config.json"
     if not (DATA / "replica.vault").exists():
         say("first start: making the replica's key and vault")

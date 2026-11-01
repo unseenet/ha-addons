@@ -4,7 +4,7 @@ slug: unseenet_replica
 description: >-
   A replica of an Unseenet council's registrar: decides name claims by
   public rules, together with replicas run by others (UN-RFC 0054)
-url: https://github.com/unseenet/ha-addons/tree/main/unseenet-replica
+url: https://github.com/unseenet/unseenet-haos-addons/tree/main/unseenet-replica
 stage: experimental
 arch:
   - aarch64
