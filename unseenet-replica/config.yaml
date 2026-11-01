@@ -1,0 +1,25 @@
+name: Unseenet council replica
+version: "0.1.0"
+slug: unseenet_replica
+description: >-
+  A replica of an Unseenet council's registrar: decides name claims by
+  public rules, together with replicas run by others (UN-RFC 0054)
+url: https://github.com/unseenet/ha-addons/tree/main/unseenet-replica
+stage: experimental
+arch:
+  - aarch64
+  - amd64
+init: false
+tmpfs: true
+backup: cold
+options:
+  passphrase: ""
+  nodes: []
+  hold: []
+schema:
+  passphrase: password
+  nodes:
+    - str
+  hold:
+    - list(admission|promotion|removal|proposal)
+  group: str?

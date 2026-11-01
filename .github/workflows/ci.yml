@@ -1,0 +1,76 @@
+name: ci
+# Lint the add-ons, build them on the images pinned in build.yaml, and start them
+# against fake options (tests/smoke.sh) - on every pull request and push to main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        addon: [unseenet-node, unseenet-replica]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Home Assistant add-on linter
+        uses: frenck/action-addon-linter@v2
+        with:
+          path: ./${{ matrix.addon }}
+      - name: yamllint, shellcheck, Python
+        if: matrix.addon == 'unseenet-node'
+        run: |
+          pip install --quiet yamllint
+          yamllint --strict .
+          shellcheck tests/smoke.sh
+          for f in */rootfs/usr/local/bin/unseenet-addon; do python3 -m py_compile "$f"; done
+
+  smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        addon: [node, replica]
+    steps:
+      - uses: actions/checkout@v4
+      - name: The pinned base image
+        run: |
+          IMAGE=$(sed -n 's/^ *amd64: *//p' "unseenet-${{ matrix.addon }}/build.yaml")
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          if docker pull -q "$IMAGE"; then
+            echo "Testing on the published $IMAGE"
+          else
+            # not published yet (ghcr.io/unseenet/replica comes with core 0.7.0): build it
+            # from the core's main branch under the pinned name, for this test only
+            echo "::warning::$IMAGE is not published yet - testing on one built from unseenet/unseenet main"
+            docker build -q --target "${{ matrix.addon }}" -t "$IMAGE" \
+              https://github.com/unseenet/unseenet.git#main
+          fi
+      - name: Start the add-on against fake options
+        run: sh tests/smoke.sh ${{ matrix.addon }}
+
+  arm64:
+    # aarch64 (a Raspberry Pi): the add-ons build there too, on the published images
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        addon: [unseenet-node, unseenet-replica]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build for aarch64
+        run: |
+          IMAGE=$(sed -n 's/^ *aarch64: *//p' "${{ matrix.addon }}/build.yaml")
+          if ! docker pull -q "$IMAGE"; then
+            echo "::warning::$IMAGE is not published yet - aarch64 build skipped"
+            exit 0
+          fi
+          docker build --build-arg BUILD_FROM="$IMAGE" --build-arg BUILD_ARCH=aarch64 \
+            --build-arg BUILD_VERSION=ci -t "${{ matrix.addon }}:arm64" "${{ matrix.addon }}"
+          docker run --rm --entrypoint uname "${{ matrix.addon }}:arm64" -m | grep -qx aarch64

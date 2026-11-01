@@ -1,0 +1,52 @@
+name: Unseenet node
+version: "0.1.0"
+slug: unseenet_node
+description: >-
+  A node of Unseenet, a Usenet-style discussion network over Tor onion
+  services - no public IP, no port forwarding
+url: https://github.com/unseenet/ha-addons/tree/main/unseenet-node
+arch:
+  - aarch64
+  - amd64
+init: false
+startup: services
+tmpfs: true
+backup: cold
+options:
+  node_name: ha-unseenet
+  passphrase: ""
+  peers: []
+  carries:
+    - "*"
+  auto_peers: 3
+  announce: true
+  retention_days: 90
+  min_pow: 18
+  new_groups: accept
+  files: false
+  encrypted_files: false
+  profile_pictures: false
+  sites: false
+  listen_internal: false
+  manage_config: true
+schema:
+  node_name: match(^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$)
+  passphrase: password
+  peers:
+    - name: match(^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$)
+      address: str
+      key: match(^ed25519:[a-z2-7]{52}$)?
+      groups: str?
+  carries:
+    - str
+  auto_peers: int(0,16)
+  announce: bool
+  retention_days: int(1,3650)
+  min_pow: int(1,32)
+  new_groups: list(accept|trusted|manual)
+  files: bool
+  encrypted_files: bool
+  profile_pictures: bool
+  sites: bool
+  listen_internal: bool
+  manage_config: bool

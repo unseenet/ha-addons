@@ -1,0 +1,62 @@
+configuration:
+  node_name:
+    name: Node name
+    description: How the node introduces itself to its peers.
+  passphrase:
+    name: Passphrase
+    description: >-
+      Seals the node's keys. At least 12 characters. Keep a copy somewhere
+      safe - it cannot be recovered, and a new one means a new node.
+  peers:
+    name: Peers
+    description: >-
+      Other nodes to exchange groups with: a name, the peer's onion address,
+      and its node key (ed25519:...). Optionally groups, a wildmat such as
+      "alt.*,dk.*". With automatic peering on, you may leave this empty.
+  carries:
+    name: Hierarchies carried
+    description: >-
+      Patterns over group names, e.g. "*" for everything or "alt.*" and
+      "dk.*". The network's own groups are always carried.
+  auto_peers:
+    name: Automatic peers
+    description: >-
+      Also exchange with this many nodes announced in the network
+      (0 = only the peers above).
+  announce:
+    name: Announce this node
+    description: Tell the network about this node, so others can find it.
+  retention_days:
+    name: Keep posts (days)
+    description: How long the node keeps posts.
+  min_pow:
+    name: Minimum postage
+    description: The least proof-of-work a post must carry (18 is the network default).
+  new_groups:
+    name: New groups
+    description: >-
+      accept - carry new groups; trusted - only from owners you trust;
+      manual - only groups you add.
+  files:
+    name: Carry pictures and files
+    description: >-
+      Pictures and small files in posts (at most 1 MiB, kept 30 days).
+      Recommended - without them users see missing pictures.
+  encrypted_files:
+    name: Carry encrypted files
+    description: Files of closed groups and private posts, which nobody but their readers can see.
+  profile_pictures:
+    name: Carry profile pictures and emoji
+  sites:
+    name: Carry sites
+    description: Small sites of pages; they stay until their owner removes them.
+  listen_internal:
+    name: Open to other add-ons
+    description: >-
+      Also listen on port 1119 of Home Assistant's internal add-on network,
+      e.g. for a council replica beside it. No port is opened on your LAN.
+  manage_config:
+    name: Manage node.toml
+    description: >-
+      Write node.toml from these options at every start. Turn off to edit
+      /data/node/node.toml by hand (the options above are then ignored).

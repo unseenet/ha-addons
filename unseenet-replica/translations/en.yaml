@@ -1,0 +1,23 @@
+configuration:
+  passphrase:
+    name: Passphrase
+    description: >-
+      Seals the replica's key. At least 12 characters. Keep a copy somewhere
+      safe - it cannot be recovered, and a new key is a new replica.
+  nodes:
+    name: Nodes
+    description: >-
+      Nodes the replica reads and posts through: onion addresses, or the
+      Unseenet node add-on's hostname with ":1119" (turn on "Open to other
+      add-ons" there). Empty: the network's known nodes. Name more than one,
+      so that no single node can hide claims from your replica.
+  hold:
+    name: Hold for me
+    description: >-
+      Changes to the council that wait until you agree with
+      "unseenet-replica agree". Empty: the replica follows the rules alone.
+  group:
+    name: Council group (first start only)
+    description: >-
+      The council registrar's group. Leave empty for the network's name
+      registrar. It is fixed when the replica is made.
