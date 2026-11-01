@@ -1,0 +1,6 @@
+{
+  "passphrase": "ci passphrase 1",
+  "nodes": ["a0d7b954-unseenet-node:1119"],
+  "hold": ["removal", "admission"],
+  "group": "unseenet.names@ph5fc5hop5232qsz"
+}

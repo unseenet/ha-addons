@@ -1,0 +1,86 @@
+name: Unseenet node
+version: "0.1.0"
+slug: unseenet_node
+description: >-
+  A node of Unseenet, a Usenet-style discussion network over Tor onion
+  services - no public IP, no port forwarding
+url: https://github.com/unseenet/unseenet-haos-addons/tree/main/unseenet-node
+arch:
+  - aarch64
+  - amd64
+init: false
+startup: services
+tmpfs: true
+backup: cold
+# Only the everyday settings have defaults here; every other setting of node.toml
+# is an optional option ("Show unused optional configuration options").
+options:
+  node_name: ha-unseenet
+  passphrase: ""
+  auto_peers: 3
+  peers: []
+  carries:
+    - "*"
+  announce: true
+  retention_days: 90
+  files: false
+  profile_pictures: false
+  sites: false
+  follow_reports: []
+schema:
+  node_name: match(^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$)
+  passphrase: password
+  auto_peers: int(0,16)
+  peers:
+    - name: match(^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$)
+      address: str
+      key: match(^ed25519:[a-z2-7]{52}$)?
+      groups: str?
+      pull: str?
+      accept: str?
+  carries:
+    - str
+  announce: bool
+  retention_days: int(1,3650)
+  files: bool
+  profile_pictures: bool
+  sites: bool
+  follow_reports:
+    - issuer: match(^ed25519:[a-z2-7]{52}$)
+      posts: list(hide|delete)
+      keys: list(refuse|surcharge|ignore)
+  # what the node carries
+  excludes: str?
+  new_groups: list(accept|trusted|manual)?
+  trusted_owners:
+    - match(^ed25519:[a-z2-7]{52}$)?
+  profiles: bool?
+  emoji: bool?
+  honour_blocks: bool?
+  fetch: bool?
+  # posts
+  min_pow: int(1,32)?
+  min_ripe: list(-|0|1|2|3|4)?
+  max_size: int(32768,65536)?
+  # files
+  encrypted_files: bool?
+  files_max_size: int(1,4)?
+  files_retention_days: int(1,3650)?
+  files_groups: str?
+  files_daily_per_key: int(0,100000)?
+  files_daily_per_group: int(0,1000000)?
+  refusal_keys:
+    - match(^ed25519:[a-z2-7]{52}$)?
+  refusal_groups: str?
+  # peering and announcing
+  ripen_to: int(0,4)?
+  pull_interval: int(60,86400)?
+  max_clients: int(1,1000000)?
+  # who runs it
+  operator_key: match(^ed25519:[a-z2-7]{52}$)?
+  operator_contact: str?
+  operator_description: str?
+  operator_logging: str?
+  # the add-on
+  listen_internal: bool?
+  manage_config: bool?

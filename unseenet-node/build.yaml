@@ -1,0 +1,5 @@
+# The project's signed node image (amd64 and arm64), pinned to a core release.
+# 0.7.0 is the first with UNSEENET_LISTEN (listen_internal) and the replica image.
+build_from:
+  aarch64: ghcr.io/unseenet/node:0.7.0
+  amd64: ghcr.io/unseenet/node:0.7.0

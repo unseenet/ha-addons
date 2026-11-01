@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""Start an Unseenet council replica (UN-RFC 0054) as a Home Assistant add-on.
+
+Runs as root before the image's own entrypoint (unseenet-replica-entrypoint):
+
+1. reads the add-on's options from /data/options.json (written by the Supervisor);
+2. hands the passphrase on in a mode-600 file on tmpfs, never in the environment
+   or in the replica's data;
+3. on the first start, passes group, hold and nodes to the entrypoint, which makes
+   the key and the vault; on later starts, applies hold and nodes to the replica's
+   config.json (the group is the replica's for good);
+4. replaces itself with the image's entrypoint, which drops root and runs the replica.
+
+The replica lives in /data/replica, not /data itself, so that the entrypoint's
+chown never touches the Supervisor's options.json. That folder IS the replica:
+never run a copy of it (a restored backup on a second machine) beside it.
+"""
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+OPTIONS = Path(os.environ.get("ADDON_OPTIONS", "/data/options.json"))
+DATA = Path(os.environ.get("UNSEENET_REPLICA_DIR", "/data/replica"))
+SECRET = Path(os.environ.get("ADDON_SECRET", "/tmp/addon/passphrase"))
+ENTRYPOINT = os.environ.get("ADDON_ENTRYPOINT", "/usr/local/bin/unseenet-replica-entrypoint")
+REPLICA = os.environ.get("ADDON_REPLICA", "/usr/local/bin/unseenet-replica")
+UID = 10001
+KINDS = ("admission", "promotion", "removal", "proposal")
+
+
+def fail(message: str) -> None:
+    print(f"[unseenet-replica] {message}", file=sys.stderr, flush=True)
+    sys.exit(64)
+
+
+def say(message: str) -> None:
+    print(f"[unseenet-replica] {message}", flush=True)
+
+
+def main() -> None:
+    try:
+        o = json.loads(OPTIONS.read_text())
+    except (OSError, ValueError) as exc:
+        fail(f"cannot read the add-on's options ({OPTIONS}): {exc}")
+
+    passphrase = str(o.get("passphrase") or "")
+    if len(passphrase) < 12:
+        fail("set a passphrase of at least 12 characters in the add-on's Configuration tab. "
+             "It seals the replica's key; keep a copy somewhere safe, it cannot be recovered.")
+    hold = sorted({str(k) for k in (o.get("hold") or [])})
+    if any(k not in KINDS for k in hold):
+        fail(f"hold takes {', '.join(KINDS)}, not {hold}")
+    nodes = [str(n).strip() for n in (o.get("nodes") or []) if str(n).strip()]
+    group = str(o.get("group") or "").strip()
+
+    # /data stays root's: the replica's user may pass through it to /data/replica, but
+    # not list it or read the options (they hold the passphrase)
+    DATA.parent.chmod(0o711)
+    OPTIONS.chmod(0o600)
+    DATA.mkdir(parents=True, exist_ok=True)
+    if DATA.stat().st_uid != UID:
+        os.chown(DATA, UID, UID)
+    DATA.chmod(0o700)
+
+    # the secret: mode 600, on tmpfs, the replica user's; the entrypoint uses its own
+    # copy in /tmp/unseenet_replica_passphrase - so not that path, or the copy empties it
+    SECRET.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    fd = os.open(SECRET, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(passphrase + "\n")
+    os.chown(SECRET.parent, UID, UID)
+    os.chown(SECRET, UID, UID)
+    os.environ["UNSEENET_REPLICA_PASSPHRASE_FILE"] = str(SECRET)
+    os.environ.pop("UNSEENET_REPLICA_PASSPHRASE", None)
+
+    # a copy left from an earlier start: on a host with fs.protected_regular even root may
+    # not open it again in sticky /tmp, so the entrypoint could not make its own
+    Path("/tmp/unseenet_replica_passphrase").unlink(missing_ok=True)
+
+    config = DATA / "config.json"
+    if not (DATA / "replica.vault").exists():
+        say("first start: making the replica's key and vault")
+        os.environ["UNSEENET_REPLICA_HOLD"] = ",".join(hold)
+        os.environ["UNSEENET_REPLICA_NODES"] = ",".join(nodes)
+        if group:
+            os.environ["UNSEENET_REPLICA_GROUP"] = group
+    elif config.exists():
+        cfg = json.loads(config.read_text())
+        if group and cfg.get("group") and group != cfg["group"]:
+            say(f"the group option ({group}) is not this replica's ({cfg['group']}); a "
+                "replica keeps the group it was made for - the option is ignored")
+        if sorted(cfg.get("hold") or []) != hold:
+            # through the replica's own command, as its user
+            subprocess.run([REPLICA, "hold", ",".join(hold) or "none"], check=True)
+        cfg = json.loads(config.read_text())
+        if (cfg.get("nodes") or []) != nodes:
+            cfg["nodes"] = nodes
+            tmp = config.with_suffix(".json.new")
+            tmp.write_text(json.dumps(cfg, indent=1) + "\n")
+            os.chown(tmp, UID, UID)
+            tmp.chmod(0o644)
+            tmp.replace(config)
+            say("nodes: " + (", ".join(nodes) or "the known nodes"))
+
+    say("starting the replica; 'unseenet-replica status' in the add-on tells how it is doing")
+    os.execv(ENTRYPOINT, [ENTRYPOINT])
+
+
+if __name__ == "__main__":
+    main()
