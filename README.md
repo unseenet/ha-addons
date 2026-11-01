@@ -7,8 +7,8 @@
 
 <h1 align="center">unseenet-haos-addons</h1>
 
-<p align="center"><b>Run an Unseenet node on your Home Assistant machine, with a few clicks.</b><br>
-It is on all the time anyway - which is exactly what a node needs.</p>
+<p align="center"><b>Run a node of the Unseenet network on your Home Assistant machine, with a few clicks.</b><br>
+It joins the one, shared Unseenet - it is not a chat server of your own.</p>
 
 <p align="center">
   <a href="https://github.com/unseenet/unseenet-haos-addons/releases"><img src="https://img.shields.io/github/v/release/unseenet/unseenet-haos-addons?include_prereleases&label=release" alt="Release"></a>
@@ -26,6 +26,16 @@ Usenet and BBSes: chat, threaded discussion, feeds and private posts, on nodes
 anyone can run, linked over Tor onion services. Every node is an onion service,
 so running one needs **no public IP, no port forwarding and no domain** - a
 Home Assistant machine on your home network is enough.
+
+**This joins the existing network.** A node is not a private chat server for
+your household or your friends: like a Usenet server of old, it becomes one
+more node of the one Unseenet network. It finds other nodes by itself, stores
+the groups everybody writes in and passes posts on, so that people anywhere can
+read and write through it - and your node keeps working for the network even
+when other nodes go away. The more nodes run by different people in different
+places, the harder the network is to stop. Privacy inside the network comes
+from end-to-end encryption (closed groups and private posts) and Tor, not from
+running your own server.
 
 This repository holds Home Assistant add-ons (now also called *apps*) built on
 the project's own signed container images:

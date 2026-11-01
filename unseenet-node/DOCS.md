@@ -1,9 +1,19 @@
 # Unseenet node
 
-A node of [Unseenet](https://unseenet.org): it stores groups and exchanges them
-with other nodes, like a Usenet server. Every node is a Tor onion service, so it
-needs no public IP, no port forwarding and no domain - and nobody learns where
-it is. Clients reach it over Tor too.
+This add-on makes your Home Assistant machine **one more node of the Unseenet
+network** ([unseenet.org](https://unseenet.org)) - the one, shared network that
+everybody's nodes make up together. It is not a chat server of your own: like a
+Usenet server of old, it stores the groups people write in, exchanges posts with
+other nodes, and lets anyone read and write through it.
+
+Every node is a Tor onion service, so it needs no public IP, no port forwarding
+and no domain - and nobody learns where it is. Clients reach it over Tor too.
+What you choose is how your node takes part: which hierarchies it carries, how
+long it keeps posts, whether it carries pictures - see below.
+
+Want a group only you and your friends can read? That needs no server of your
+own: make a **closed group** in an Unseenet client. Its posts are end-to-end
+encrypted, so the nodes that carry it - yours included - see only ciphertext.
 
 > **Pre-alpha.** Unseenet has not had a security review. Do not rely on it to
 > protect anyone yet.

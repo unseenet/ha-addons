@@ -2,8 +2,8 @@ name: Unseenet node
 version: "0.1.0"
 slug: unseenet_node
 description: >-
-  A node of Unseenet, a Usenet-style discussion network over Tor onion
-  services - no public IP, no port forwarding
+  Joins the Unseenet network as one more node - a shared, Usenet-style
+  discussion network over Tor, not a private chat server
 url: https://github.com/unseenet/unseenet-haos-addons/tree/main/unseenet-node
 arch:
   - aarch64
