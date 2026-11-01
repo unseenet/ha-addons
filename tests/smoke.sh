@@ -9,7 +9,16 @@
 set -eu
 cd "$(dirname "$0")/.."
 WORK=$(mktemp -d)
-trap 'docker rm -f ha-smoke-node ha-smoke-replica >/dev/null 2>&1 || true; rm -rf "$WORK"' EXIT
+cleanup() {
+    docker rm -f ha-smoke-node ha-smoke-replica >/dev/null 2>&1 || true
+    # the services' files are uid 10001's: remove them as root in a container
+    for img in ha-addon-node:smoke ha-addon-replica:smoke; do
+        docker run --rm --entrypoint rm -v "$WORK:/w" "$img" -rf /w/node /w/replica \
+            >/dev/null 2>&1 && break
+    done
+    rm -rf "$WORK"
+}
+trap cleanup EXIT
 
 base() {   # the amd64 image in an add-on's build.yaml
     sed -n 's/^ *amd64: *//p' "$1/build.yaml"
