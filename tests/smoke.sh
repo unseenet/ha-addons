@@ -25,7 +25,13 @@ base() {   # the amd64 image in an add-on's build.yaml
 }
 say() { printf '\n== %s\n' "$*"; }
 ok() { printf 'ok - %s\n' "$*"; }
-no() { printf 'not ok - %s\n' "$*" >&2; exit 1; }
+no() {
+    printf 'not ok - %s\n' "$*" >&2
+    for c in ha-smoke-node ha-smoke-replica; do       # what the service said, if it ran
+        docker logs "$c" 2>&1 | tail -30 | sed "s/^/  $c: /" >&2 || true
+    done
+    exit 1
+}
 
 opts() {   # opts DIR JSON: the Supervisor's options.json in a fresh /data
     mkdir -p "$1" && printf '%s\n' "$2" > "$1/options.json"
